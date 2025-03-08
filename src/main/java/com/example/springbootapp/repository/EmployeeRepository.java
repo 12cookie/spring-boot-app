@@ -15,5 +15,5 @@ public interface EmployeeRepository extends MongoRepository <EmployeeDetails, St
 	@Query(value = "{education:'?0'}", fields = "{'name' : 1, 'age' : 1}")
 	List<EmployeeDetails> findAll(String education);
 	
-	public long count();
+	long count();
 }
