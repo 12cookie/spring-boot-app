@@ -8,17 +8,16 @@ public class EmployeeDetails {
 
 	@Id
 	private String id;
-	
 	private final String name;
 	private final int age;
 	private final String education;
 
-	public EmployeeDetails(String id, String name, int age, String education) {
+	public EmployeeDetails(UserRegistrationDetails registrationDetails) {
 		super();
-		this.id = id;
-		this.name = name;
-		this.age = age;
-		this.education = education;
+		this.id = registrationDetails.getId();
+		this.name = registrationDetails.getName();
+		this.age = registrationDetails.getAge();
+		this.education = registrationDetails.getEducation();
 	}
 
 	public String getId() {

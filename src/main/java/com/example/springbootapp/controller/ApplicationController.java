@@ -1,43 +1,55 @@
 package com.example.springbootapp.controller;
 
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import com.example.springbootapp.exception.BadRequestException;
+import com.example.springbootapp.exception.Exception500Handler;
+import com.example.springbootapp.model.UserRegistrationDetails;
+import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.springbootapp.util.DBUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import java.util.Map;
+import java.util.Objects;
+
+@CrossOrigin
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
 public class ApplicationController {
 
-    private final ObjectMapper objectMapper;
+    private static final Logger log = LoggerFactory.getLogger(ApplicationController.class);
 
     final DBUtil dbUtil;
 
-    public ApplicationController(ObjectMapper objectMapper, DBUtil dbUtil) {
-        this.objectMapper = objectMapper;
+    public ApplicationController(DBUtil dbUtil) {
         this.dbUtil = dbUtil;
     }
 
-    @GetMapping("/hello")
-    public ObjectNode sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
+    @PostMapping(
+            path = "/v1/register",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity <Map <String, Object>> processJsonData(
+            @Valid @RequestBody UserRegistrationDetails registrationDetails,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestHeader(value = "X-Request-ID", required = false) String xRequestID) {
 
-        dbUtil.createEmployee("1", "John", 25, "Masters");
-        dbUtil.showAllEmployees();
-        dbUtil.getEmployeeByName("John");
+        log.info("Received request ID: {} to process JSON data", xRequestID);
 
-        dbUtil.updateEmployeeAge("Jon", 22);
-        dbUtil.getEmployeesByEducation("Masters");
-
-        dbUtil.findCountOfEmployees();
-        dbUtil.deleteEmployee("1");
-        dbUtil.findCountOfEmployees();
-        
-        ObjectNode objectNode = objectMapper.createObjectNode();
-        objectNode.put("Name", name);
-        return objectNode;
+        if(!Objects.equals(authorization, "Wavemaker")) {
+            log.error("Received authorization header is incorrect");
+            throw new BadRequestException("Authorization header is incorrect");
+        }
+        try {
+            dbUtil.createEmployee(registrationDetails);
+        }
+        catch (Exception e) {
+            log.error("Internal server error: {}", e.getMessage());
+            throw new Exception500Handler("Internal server error", e);
+        }
+        return new ResponseEntity<> (HttpStatus.OK);
     }
 }

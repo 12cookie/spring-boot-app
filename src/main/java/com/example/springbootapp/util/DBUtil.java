@@ -2,6 +2,7 @@ package com.example.springbootapp.util;
 
 import java.util.List;
 
+import com.example.springbootapp.model.UserRegistrationDetails;
 import com.example.springbootapp.repository.CustomRepository;
 import org.springframework.stereotype.Component;
 
@@ -20,9 +21,9 @@ public class DBUtil {
         this.customRepository = customRepository;
     }
 
-    public void createEmployee(String id, String name, int age, String education) {
+    public void createEmployee(UserRegistrationDetails registrationDetails) {
 		System.out.println("Data creation started...");
-        employeeRepository.save(new EmployeeDetails(id, name, age, education));
+        employeeRepository.save(new EmployeeDetails(registrationDetails));
 		System.out.println("Data creation complete...");
 	}
 
