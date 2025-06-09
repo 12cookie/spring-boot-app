@@ -15,7 +15,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 
 @Configuration
 @EnableMongoRepositories(basePackages = "com.example.springbootapp.repository")
-public class MongoDBConfig extends AbstractMongoClientConfiguration {
+public class MongoConfig extends AbstractMongoClientConfiguration {
 
     @Value("${spring.data.mongodb.uri}")
     private String connectionString;
@@ -37,6 +37,7 @@ public class MongoDBConfig extends AbstractMongoClientConfiguration {
         MongoClientSettings settings = MongoClientSettings.builder()
                 .applyConnectionString(connString)
                 .build();
+
         return MongoClients.create(settings);
     }
 

@@ -1,55 +1,120 @@
 package com.example.springbootapp.controller;
 
-import com.example.springbootapp.exception.BadRequestException;
-import com.example.springbootapp.exception.Exception500Handler;
-import com.example.springbootapp.model.UserRegistrationDetails;
+import com.example.springbootapp.model.httpmodels.LoginRequest;
+import com.example.springbootapp.model.httpmodels.OTPVerificationRequest;
+import com.example.springbootapp.model.httpmodels.RegistrationRequest;
+import com.example.springbootapp.service.OTPService;
+import com.example.springbootapp.service.UserService;
+import com.example.springbootapp.util.AuthUtil;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.constraints.Email;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import com.example.springbootapp.util.DBUtil;
-
-import java.util.Map;
-import java.util.Objects;
-
+@Slf4j
 @CrossOrigin
 @RestController
 public class ApplicationController {
 
-    private static final Logger log = LoggerFactory.getLogger(ApplicationController.class);
+    final OTPService otpService;
 
-    final DBUtil dbUtil;
+    final UserService userService;
 
-    public ApplicationController(DBUtil dbUtil) {
-        this.dbUtil = dbUtil;
+    final AuthUtil authUtil;
+
+    public ApplicationController(OTPService otpService, UserService userService, AuthUtil authUtil) {
+        this.otpService = otpService;
+        this.userService = userService;
+        this.authUtil = authUtil;
     }
 
     @PostMapping(
-            path = "/v1/register",
+            path = "/v1/registerUser",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity <Map <String, Object>> processJsonData(
-            @Valid @RequestBody UserRegistrationDetails registrationDetails,
-            @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-Request-ID", required = false) String xRequestID) {
+    public ResponseEntity <String> registerUser(
+            @Valid @RequestBody RegistrationRequest registrationRequest,
+            @RequestHeader(value = "Authorization") String authorization,
+            @RequestHeader(value = "X-Request-ID") String xRequestID) {
 
-        log.info("Received request ID: {} to process JSON data", xRequestID);
+        log.info("Received request ID: {} to register user", xRequestID);
 
-        if(!Objects.equals(authorization, "Wavemaker")) {
-            log.error("Received authorization header is incorrect");
-            throw new BadRequestException("Authorization header is incorrect");
+        authUtil.authorizeToken(authorization);
+        userService.checkDuplicateUser(registrationRequest);
+        otpService.generateAndSendOTP(registrationRequest.email());
+        userService.saveRegistrationDetailsToCache(registrationRequest);
+        return ResponseEntity.ok("OTP has been sent");
+    }
+
+    @PostMapping(
+            path = "/v1/login",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity <String> loginUser(
+            @Valid @RequestBody LoginRequest loginRequest,
+            @RequestHeader(value = "Authorization") String authorization,
+            @RequestHeader(value = "X-Request-ID") String xRequestID) {
+
+        log.info("Received request ID: {} to login", xRequestID);
+
+        authUtil.authorizeToken(authorization);
+        userService.verifyUser(loginRequest);
+        return ResponseEntity.ok("User verified successfully");
+    }
+
+    @PostMapping(
+            path = "/v1/verifyOTP",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity <String> verifyOTP(
+            @Valid @RequestBody OTPVerificationRequest request,
+            @RequestHeader(value = "Authorization") String authorization,
+            @RequestHeader(value = "X-Request-ID") String xRequestID) {
+
+        log.info("Received OTP verification request: {}", xRequestID);
+
+        authUtil.authorizeToken(authorization);
+        otpService.verifyOTP(request.getEmail(), request.getOtp());
+
+        if(!Boolean.parseBoolean(request.getIsUserRegistered())) {
+            userService.saveUser(request.getEmail());
+            return ResponseEntity.ok("User registered successfully");
         }
-        try {
-            dbUtil.createEmployee(registrationDetails);
-        }
-        catch (Exception e) {
-            log.error("Internal server error: {}", e.getMessage());
-            throw new Exception500Handler("Internal server error", e);
-        }
-        return new ResponseEntity<> (HttpStatus.OK);
+        return ResponseEntity.ok("OTP verified successfully");
+    }
+
+    @PostMapping(
+            path = "/v1/forgotPassword",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity <String> verifyOTP(
+            @Valid @RequestBody @Email @JsonProperty("email") String email,
+            @RequestHeader(value = "Authorization") String authorization,
+            @RequestHeader(value = "X-Request-ID") String xRequestID) {
+
+        log.info("Received forgot password request for request ID: {}", xRequestID);
+
+        authUtil.authorizeToken(authorization);
+        otpService.generateAndSendOTP(email);
+        return ResponseEntity.ok("OTP has been sent");
+    }
+
+    @PostMapping(
+            path = "/v1/updatePassword",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity <String> updatePassword(
+            @Valid @RequestBody LoginRequest loginRequest,
+            @RequestHeader(value = "Authorization") String authorization,
+            @RequestHeader(value = "X-Request-ID") String xRequestID) {
+
+        log.info("Received request to update password for request ID: {}", xRequestID);
+
+        authUtil.authorizeToken(authorization);
+        userService.updatePassword(loginRequest.getUsername(), loginRequest.getPassword());
+        return ResponseEntity.ok("Password updated successfully");
     }
 }
