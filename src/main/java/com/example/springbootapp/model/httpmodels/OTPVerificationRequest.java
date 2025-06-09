@@ -20,8 +20,4 @@ public class OTPVerificationRequest {
     @NotBlank(message = "OTP is required")
     @Length(min = 6, max = 6)
     private String otp;
-
-    @JsonProperty("isUserRegistered")
-    @NotBlank(message = "Confirm whether user is registered or not")
-    private String isUserRegistered;
 }

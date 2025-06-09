@@ -1,5 +1,6 @@
 package com.example.springbootapp.controller;
 
+import com.example.springbootapp.exception.BadRequestException;
 import com.example.springbootapp.model.httpmodels.ForgotPasswordRequest;
 import com.example.springbootapp.model.httpmodels.LoginRequest;
 import com.example.springbootapp.model.httpmodels.OTPVerificationRequest;
@@ -77,8 +78,7 @@ public class ApplicationController {
 
         authUtil.authorizeToken(authorization);
         otpService.verifyOTP(request.getEmail(), request.getOtp());
-
-        if(!Boolean.parseBoolean(request.getIsUserRegistered())) {
+        if(userService.isEmailNotRegistered(request.getEmail())) {
             userService.saveUser(request.getEmail());
             return ResponseEntity.ok("User registered successfully");
         }
@@ -97,7 +97,9 @@ public class ApplicationController {
         log.info("Received forgot password request for request ID: {}", xRequestID);
 
         authUtil.authorizeToken(authorization);
-        userService.isEmailRegistered(forgotPasswordRequest.getEmail());
+        if(userService.isEmailNotRegistered(forgotPasswordRequest.getEmail())) {
+            throw new BadRequestException("Email ID not registered");
+        }
         otpService.generateAndSendOTP(forgotPasswordRequest.getEmail());
         return ResponseEntity.ok("OTP has been sent");
     }

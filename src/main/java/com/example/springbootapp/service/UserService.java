@@ -92,9 +92,7 @@ public class UserService {
         return user;
     }
 
-    public void isEmailRegistered(String email) {
-        if(userRepository.findByEmail(email) == null) {
-            throw new BadRequestException("Email is not registered");
-        }
+    public boolean isEmailNotRegistered(String email) {
+        return userRepository.findByEmail(email) == null;
     }
 }
