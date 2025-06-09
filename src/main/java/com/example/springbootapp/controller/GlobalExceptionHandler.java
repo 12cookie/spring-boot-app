@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -18,8 +19,22 @@ import java.util.*;
 public class GlobalExceptionHandler {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity <ApiError> handleMissingHeaderException(MissingRequestHeaderException ex, WebRequest request) {
+
+        ApiError apiError = new ApiError(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request.getDescription(false)
+        );
+
+        log.error(apiError.getMessage());
+        return new ResponseEntity <> (apiError, HttpStatus.BAD_REQUEST);
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiError> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
+    public ResponseEntity <ApiError> handleValidationExceptions(MethodArgumentNotValidException ex, WebRequest request) {
 
         ApiError apiError = new ApiError(HttpStatus.BAD_REQUEST, "Validation error",
                 request.getDescription(false));
@@ -38,7 +53,7 @@ public class GlobalExceptionHandler {
 
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiError> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
+    public ResponseEntity <ApiError> handleResourceNotFoundException(ResourceNotFoundException ex, WebRequest request) {
 
         ApiError apiError = new ApiError(
                 HttpStatus.NOT_FOUND,
@@ -52,7 +67,7 @@ public class GlobalExceptionHandler {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ApiError> handleBadRequestException(BadRequestException ex, WebRequest request) {
+    public ResponseEntity <ApiError> handleBadRequestException(BadRequestException ex, WebRequest request) {
 
         ApiError apiError = new ApiError(
                 HttpStatus.BAD_REQUEST,
@@ -66,7 +81,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception500Handler.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<ApiError> handleGlobalException(Exception ex, WebRequest request) {
+    public ResponseEntity <ApiError> handleGlobalException(Exception ex, WebRequest request) {
 
         ApiError apiError = new ApiError(
                 HttpStatus.INTERNAL_SERVER_ERROR,

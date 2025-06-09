@@ -1,14 +1,13 @@
 package com.example.springbootapp.controller;
 
+import com.example.springbootapp.model.httpmodels.ForgotPasswordRequest;
 import com.example.springbootapp.model.httpmodels.LoginRequest;
 import com.example.springbootapp.model.httpmodels.OTPVerificationRequest;
 import com.example.springbootapp.model.httpmodels.RegistrationRequest;
 import com.example.springbootapp.service.OTPService;
 import com.example.springbootapp.service.UserService;
 import com.example.springbootapp.util.AuthUtil;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -90,15 +89,16 @@ public class ApplicationController {
             path = "/v1/forgotPassword",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity <String> verifyOTP(
-            @Valid @RequestBody @Email @JsonProperty("email") String email,
+    public ResponseEntity <String> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest,
             @RequestHeader(value = "Authorization") String authorization,
             @RequestHeader(value = "X-Request-ID") String xRequestID) {
 
         log.info("Received forgot password request for request ID: {}", xRequestID);
 
         authUtil.authorizeToken(authorization);
-        otpService.generateAndSendOTP(email);
+        userService.isEmailRegistered(forgotPasswordRequest.getEmail());
+        otpService.generateAndSendOTP(forgotPasswordRequest.getEmail());
         return ResponseEntity.ok("OTP has been sent");
     }
 

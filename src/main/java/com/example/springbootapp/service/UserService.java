@@ -58,12 +58,7 @@ public class UserService {
     }
 
     public void verifyUser(LoginRequest loginRequest) {
-
-        User user = userRepository.findByUsername(loginRequest.getUsername());
-        if(user == null) {
-            throw new BadRequestException("User doesn't exist");
-        }
-
+        User user = isUserRegistered(loginRequest.getUsername());
         if(!user.getPassword().equals(loginRequest.getPassword())) {
             throw new BadRequestException("Incorrect password");
         }
@@ -84,13 +79,22 @@ public class UserService {
     }
 
     public void updatePassword(String username, String newPassword) {
+        User user = isUserRegistered(username);
+        user.setPassword(newPassword);
+        userRepository.save(user);
+    }
 
+    public User isUserRegistered(String username) {
         User user = userRepository.findByUsername(username);
         if(user == null) {
             throw new BadRequestException("User doesn't exist");
         }
+        return user;
+    }
 
-        user.setPassword(newPassword);
-        userRepository.save(user);
+    public void isEmailRegistered(String email) {
+        if(userRepository.findByEmail(email) == null) {
+            throw new BadRequestException("Email is not registered");
+        }
     }
 }
