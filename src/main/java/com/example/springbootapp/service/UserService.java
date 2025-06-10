@@ -68,6 +68,9 @@ public class UserService {
 
         String key = commonUtil.base64Encode("registration" + email);
         String registrationDetails = cacheService.getFromCache(key);
+        if(registrationDetails == null) {
+            throw new BadRequestException("Username not found");
+        }
         try {
             User user = (User) commonUtil.serializeObject(registrationDetails, User.class);
             userRepository.save(user);
